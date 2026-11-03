@@ -12,6 +12,11 @@
 
 .card.intro{width:min(490px,96%);padding:clamp(9px,2.5vw,25px)}.card.intro h1{font-size:clamp(22px,5vw,44px)}.intro-name{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:5px 8px;font-size:13px;margin:0 auto 10px}.intro-name[hidden]{display:none}.intro-name label{font-weight:850}.intro-name input{width:11em;max-width:100%;padding:7px 9px;background:#fff;border:1px solid #cbb5dd;border-radius:9px;font:inherit;color:inherit}.intro-name input:focus-visible{outline:2px solid #7046a9;outline-offset:2px}.intro-note,.intro-error{width:100%;font-size:11px}.intro-note{color:#634f72}.intro-error{color:#9a2949}.intro-error:empty{display:none}
 @media(max-width:560px){.card.intro p{margin-bottom:6px}.intro-name{margin-bottom:6px;font-size:11px}.intro-name input{padding:5px 8px}.card.intro .eyebrow{font-size:9px}}
+
+.card.ending{width:min(560px,96%);padding:clamp(12px,2.2vw,25px)}.card.ending h1{font-size:clamp(22px,4vw,38px)}.card.ending #message{font-size:clamp(10px,2.3vw,13px);margin:9px 0 12px}
+.ending-letter{margin:10px auto 0;padding:11px clamp(12px,3vw,27px) 15px;text-align:left;background:repeating-linear-gradient(to bottom,#fffdf4 0 27px,#ede4da 27px 28px);border:1px solid #e7d4c5;border-radius:10px;box-shadow:0 3px 8px #53355919;color:#553c53}
+.ending-letter[hidden]{display:none}.letter-to{display:flex;align-items:center;gap:7px;font-size:12px;line-height:28px;font-weight:850;color:#795480}.ending-letter blockquote{margin:0;line-height:28px;font-size:clamp(12px,2.6vw,16px);font-weight:650;word-break:keep-all;overflow-wrap:anywhere}
+@media(max-width:560px){.scene:has(.card.ending) canvas{height:clamp(300px,76vw,350px)}.card.ending .eyebrow{font-size:10px}}
 </style>
 </head>
 <body>
@@ -21,7 +26,10 @@
 <div class="hud"><span id="stage">1 / 10 · 아침 교실</span><div class="hud-right"><span id="hearts" class="hearts"></span><span id="timer" aria-label="스테이지 경과 시간">0초</span><span id="score">0 점</span><button class="mini" id="reset" type="button">재시작</button></div></div>
 <div class="scene">
 <canvas id="game" width="960" height="430" aria-label="교사 캐릭터를 조작해 오른쪽 출구까지 이동하는 횡스크롤 게임"></canvas>
-<div class="overlay" id="overlay"><div class="card intro" id="card"><div class="eyebrow" id="kicker">🔔 딩동댕 · 아침 8시 30분</div><h1 id="title">학교선생님의 모험</h1><p id="message">첫 종이 울렸어요! 출석부를 챙겨 교실로 달려가요.
+<div class="overlay" id="overlay"><div class="card intro" id="card"><div class="eyebrow" id="kicker">🔔 딩동댕 · 아침 8시 30분</div><h1 id="title">학교선생님의 모험</h1><section class="ending-letter" id="ending-letter" aria-label="선생님께 드리는 편지" hidden>
+<div class="letter-to"><span aria-hidden="true">💌</span> 선생님께</div>
+<blockquote>오늘 하루도 정말 고생하셨습니다. 언제나 묵묵히 자신의 자리를 지키시는 선생님이 있기에 대한민국 교육이 있습니다.</blockquote>
+</section><p id="message">첫 종이 울렸어요! 출석부를 챙겨 교실로 달려가요.
 열 가지 학교 일과를 마치고 무사히 퇴근할 수 있을까요?</p>
 <div class="intro-name" id="intro-name"><label for="player-name">선생님 닉네임</label><input id="player-name" maxlength="16" placeholder="예: 초코쌤" autocomplete="off" aria-describedby="name-note name-error" required><span class="intro-note" id="name-note">게임이 끝나면 닉네임과 점수가 명예의 전당에 자동 공개돼요.</span><span class="intro-error" id="name-error" role="status"></span></div><button class="primary" id="action" type="button">모험 시작 ▶</button></div></div>
 </div>
@@ -173,6 +181,8 @@ function show(type,kicker,title,message,button) {
   state = type;
   $('intro-name').hidden = type !== 'intro';
   $('card').classList.toggle('intro',type === 'intro');
+  $('card').classList.toggle('ending',type === 'won');
+  $('ending-letter').hidden = type !== 'won';
   $('kicker').textContent = kicker;
   $('title').textContent = title;
   $('message').textContent = message;
