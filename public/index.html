@@ -9,6 +9,9 @@
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(#e8cddd 1px,transparent 1px) 0 0/19px 19px,#fbf2f7;color:#392e49;font-family:system-ui,"Malgun Gothic",sans-serif}main{max-width:1050px;margin:auto;padding:20px 18px 24px}header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px}.brand{display:flex;align-items:center;gap:10px;font-size:clamp(16px,3vw,23px);font-weight:900;letter-spacing:-.06em}.logo{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:#e8d9ff;font-size:23px}.tag,.eyebrow{font-weight:900;font-size:11px;letter-spacing:.15em}.tag{color:#7c638f;background:white;border:1px solid #e9daee;padding:8px 12px;border-radius:99px}.frame{background:#fff;border:1px solid #e7d6ed;border-radius:24px;overflow:hidden;box-shadow:0 10px 35px #6a3c7021}.hud{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 16px;font-size:13px;font-weight:850}.hud-right{display:flex;gap:12px;align-items:center}.hearts{color:#d94474;font-size:18px;white-space:nowrap}.scene{position:relative;isolation:isolate;background:#ead9f5}canvas{display:block;width:100%;height:auto;touch-action:none}.overlay{position:absolute;inset:0;display:grid;place-items:center;padding:10px;background:#39204c29}.overlay[hidden]{display:none}.card{text-align:center;background:#fff8fcf5;border:2px solid #fff;border-radius:24px;box-shadow:0 12px 35px #482d6240;padding:clamp(12px,3vw,29px) clamp(16px,5vw,48px);max-width:95%}.eyebrow{color:#7952a3}.card h1{font-size:clamp(21px,5vw,50px);letter-spacing:-.08em;line-height:1.13;margin:7px 0 8px}.card p{font-size:clamp(11px,2.2vw,15px);line-height:1.55;margin:0 0 13px;color:#634f72;white-space:pre-line}button{font:inherit;cursor:pointer;border:0;color:inherit;touch-action:manipulation}button:focus-visible{outline:3px solid #45226f;outline-offset:3px}.primary{background:#7046a9;color:white;font-weight:850;padding:10px 24px;border-radius:14px;box-shadow:0 4px #513279}.primary:active{transform:translateY(2px);box-shadow:0 2px #513279}.mini{background:#f2eafa;border-radius:9px;padding:6px 9px;font-weight:800}.status{min-height:29px;padding:6px 15px;color:#654681;background:#fcf7ff;font-weight:750;font-size:12px}.controls{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-top:1px solid #f2eaf5}.move{display:flex;gap:8px}.control{min-width:52px;height:42px;border-radius:13px;background:#efe5ff;font-weight:900;touch-action:none;user-select:none}.control.jump{background:#ffe1eb;padding:0 18px}.control.on,.control:active{filter:brightness(.88);transform:translateY(2px)}.keys{color:#6e5d77;text-align:center;font-size:12px}.guide{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}.guide div{background:#fff9;border:1px solid #ebdceb;border-radius:15px;padding:9px 11px;font-size:12px;color:#6d5878}.guide b{display:block;color:#402b55;margin-bottom:2px}@media(max-width:560px){main{padding:10px 7px}.tag,.keys{display:none}.hud{padding:7px 8px;font-size:11px}.hud-right{gap:5px}.hearts{font-size:14px}.scene canvas{height:clamp(220px,65vw,320px)}.guide{grid-template-columns:repeat(2,1fr);gap:4px}.guide div{padding:7px 5px;font-size:10px}.card{border-radius:17px}.primary{padding:7px 17px}}
 
 .board{margin-top:14px;background:#fff;border:1px solid #ebdceb;border-radius:18px;padding:14px 16px}.board-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.board h2{margin:0;font-size:18px}.board p{font-size:13px;color:#654681;margin:8px 0}.board ol{padding:0;margin:8px 0;list-style:none}.board li{display:grid;grid-template-columns:3em 1fr auto;gap:8px;padding:8px;border-top:1px solid #f2eaf5;font-size:13px;overflow-wrap:anywhere}.record{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}.record[hidden]{display:none}.record input{font:inherit;border:1px solid #cbb5dd;border-radius:8px;padding:6px 8px;width:10em;max-width:100%}
+
+.card.intro{width:min(490px,96%);padding:clamp(9px,2.5vw,25px)}.card.intro h1{font-size:clamp(22px,5vw,44px)}.intro-name{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:5px 8px;font-size:13px;margin:0 auto 10px}.intro-name[hidden]{display:none}.intro-name label{font-weight:850}.intro-name input{width:11em;max-width:100%;padding:7px 9px;background:#fff;border:1px solid #cbb5dd;border-radius:9px;font:inherit;color:inherit}.intro-name input:focus-visible{outline:2px solid #7046a9;outline-offset:2px}.intro-note,.intro-error{width:100%;font-size:11px}.intro-note{color:#634f72}.intro-error{color:#9a2949}.intro-error:empty{display:none}
+@media(max-width:560px){.card.intro p{margin-bottom:6px}.intro-name{margin-bottom:6px;font-size:11px}.intro-name input{padding:5px 8px}.card.intro .eyebrow{font-size:9px}}
 </style>
 </head>
 <body>
@@ -18,7 +21,9 @@
 <div class="hud"><span id="stage">1 / 10 · 아침 교실</span><div class="hud-right"><span id="hearts" class="hearts"></span><span id="timer" aria-label="스테이지 경과 시간">0초</span><span id="score">0 점</span><button class="mini" id="reset" type="button">재시작</button></div></div>
 <div class="scene">
 <canvas id="game" width="960" height="430" aria-label="교사 캐릭터를 조작해 오른쪽 출구까지 이동하는 횡스크롤 게임"></canvas>
-<div class="overlay" id="overlay"><div class="card"><div class="eyebrow" id="kicker">10개 스테이지 · 점프 액션</div><h1 id="title">학교선생님의 모험</h1><p id="message">아침 출석부터 퇴근 전 마감까지, 선생님의 하루!<br>장애물을 뛰어넘고 오른쪽 출구로 향하세요.</p><button class="primary" id="action" type="button">모험 시작 ▶</button></div></div>
+<div class="overlay" id="overlay"><div class="card intro" id="card"><div class="eyebrow" id="kicker">🔔 딩동댕 · 아침 8시 30분</div><h1 id="title">학교선생님의 모험</h1><p id="message">첫 종이 울렸어요! 출석부를 챙겨 교실로 달려가요.
+열 가지 학교 일과를 마치고 무사히 퇴근할 수 있을까요?</p>
+<div class="intro-name" id="intro-name"><label for="player-name">선생님 닉네임</label><input id="player-name" maxlength="16" placeholder="예: 초코쌤" autocomplete="off" aria-describedby="name-note name-error" required><span class="intro-note" id="name-note">명예의 전당에 등록하면 닉네임과 점수가 공개돼요.</span><span class="intro-error" id="name-error" role="status"></span></div><button class="primary" id="action" type="button">모험 시작 ▶</button></div></div>
 </div>
 <div class="status" id="status" role="status">별을 모으고 빠르게 도착하면 시간 보너스를 받아요.</div>
 <div class="controls"><div class="move"><button class="control" data-key="left" aria-label="왼쪽">◀</button><button class="control" data-key="right" aria-label="오른쪽">▶</button></div><div class="keys">이동 ← → / A D · 점프 Space / ↑ / W</div><button class="control jump" data-key="jump" aria-label="점프">⬆ 점프</button></div>
@@ -89,7 +94,12 @@ const itemStyles = {
 };
 const online = location.protocol === 'https:' || location.hostname === 'localhost';
 const usedComplaints = new Set();
-let completedRun = null, readVersion = 0;
+let completedRun = null, readVersion = 0, playerName = '';
+const intro = {kicker:$('kicker').textContent,title:$('title').textContent,message:$('message').textContent};
+function readNickname(input) {
+  const name = input.value.normalize('NFC').trim();
+  return /^[\p{L}\p{N} _-]{1,16}$/u.test(name) ? name : '';
+}
 const keys = new Set(), fingers = new Map();
 const bindings = {ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', Space:'jump', ArrowUp:'jump', KeyW:'jump'};
 let index, state, player, foes, pickups, time, camera, hp, score, shield, raiseUntil, spicyUntil, jumpBuffer, hint, hintUntil;
@@ -110,6 +120,17 @@ function loadStage() {
   updateHUD();
 }
 function start() {
+  if (state === 'intro') {
+    const input = $('player-name');
+    const name = readNickname(input);
+    if (!name) {
+      $('name-error').textContent = '닉네임을 1~16자로 입력해 주세요.';
+      input.setAttribute('aria-invalid','true');
+      input.focus({preventScroll:true});
+      return;
+    }
+    playerName = name;
+  }
   usedComplaints.clear();
   completedRun = null;
   $('record').hidden = true;
@@ -127,6 +148,8 @@ function play() {
 function show(type,kicker,title,message,button) {
   clearInputs();
   state = type;
+  $('intro-name').hidden = type !== 'intro';
+  $('card').classList.toggle('intro',type === 'intro');
   $('kicker').textContent = kicker;
   $('title').textContent = title;
   $('message').textContent = message;
@@ -140,7 +163,20 @@ $('action').addEventListener('click', () => {
     hp = MAX_HP;
     loadStage();
     play();
+  } else if (state === 'lost' || state === 'won') {
+    show('intro',intro.kicker,intro.title,intro.message,'모험 시작 ▶');
+    $('player-name').focus({preventScroll:true});
   } else start();
+});
+$('player-name').addEventListener('input', () => {
+  $('name-error').textContent = '';
+  $('player-name').removeAttribute('aria-invalid');
+});
+$('player-name').addEventListener('keydown', event => {
+  if (event.key === 'Enter' && !event.isComposing && state === 'intro') {
+    event.preventDefault();
+    start();
+  }
 });
 $('reset').addEventListener('click', start);
 function timeBonus() {
@@ -151,6 +187,7 @@ function timeBonus() {
 function finishRun(type, kicker, title, details, button) {
   if (online) {
     completedRun = {score, runId:crypto.randomUUID()};
+    $('nickname').value = playerName;
     $('record').hidden = false;
     $('record-message').textContent = '아래 명예의 전당에서 이번 기록을 등록할 수 있어요.';
   }
@@ -560,8 +597,8 @@ $('record').addEventListener('submit', async event => {
   event.preventDefault();
   const run = completedRun;
   if (!run || $('save').disabled) return;
-  const name = $('nickname').value.normalize('NFC').trim();
-  if (!/^[\p{L}\p{N} _-]{1,16}$/u.test(name)) {
+  const name = readNickname($('nickname'));
+  if (!name) {
     $('record-message').textContent = '닉네임은 글자, 숫자, 공백, 밑줄, 하이픈으로 1~16자까지 쓸 수 있어요.';
     return;
   }
