@@ -44,7 +44,7 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const canvas = $('game'), ctx = canvas.getContext('2d');
-const W = 960, H = 430, FLOOR = 350, MAX_HP = 5, MOVE_SPEED = 284;
+const W = 960, H = 430, FLOOR = 350, MOVE_SPEED = 284;
 const levels = [
   {name:'아침 교실', sign:'오늘의 출석', prop:'📒', wall:'#f6dfee', trim:'#edcde0', accent:'#67968d', route:'runner chat parent paper sleeper principal paper', next:'출석 확인 완료! 교무실에서 수업 자료를 챙겨요.'},
   {name:'교무실', sign:'수업 준비 중', prop:'📚', wall:'#eae2fa', trim:'#ddd1f1', accent:'#8273a6', route:'sleeper paper chat runner paper parent deputy paper', next:'수업 준비 끝! 운동장으로 이동해요.'},
@@ -123,6 +123,9 @@ const keys = new Set(), fingers = new Map();
 const bindings = {ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', Space:'jump', ArrowUp:'jump', KeyW:'jump'};
 let index, state, player, foes, pickups, time, camera, hp, score, shield, raiseUntil, spicyUntil, jumpBuffer, hint, hintUntil;
 let timeBonusTotal = 0, viewWidth = W, last = 0, accumulator = 0;
+function maxHealth(stageIndex = index) {
+  return stageIndex < 4 ? 5 : 3;
+}
 function loadStage() {
   const level = levels[index];
   player = {x:70,y:FLOOR,vy:0,face:1,ground:true,immune:0};
@@ -156,7 +159,7 @@ function start() {
   completedRun = null;
   $('record').hidden = true;
   $('record-message').textContent = '';
-  index = 0; hp = MAX_HP; score = 0; shield = 0; timeBonusTotal = 0;
+  index = 0; hp = maxHealth(); score = 0; shield = 0; timeBonusTotal = 0;
   loadStage();
   play();
 }
@@ -181,7 +184,7 @@ function show(type,kicker,title,message,button) {
 $('action').addEventListener('click', () => {
   if (state === 'clear') {
     index++;
-    hp = MAX_HP;
+    hp = maxHealth();
     loadStage();
     play();
   } else if (state === 'lost' || state === 'won') {
@@ -219,10 +222,10 @@ function finishRun(type, kicker, title, details, button) {
 function updateHUD() {
   const elapsed = Math.floor(time)+'초';
   if ($('timer').textContent !== elapsed) $('timer').textContent = elapsed;
-  const heart = '♥'.repeat(hp) + '♡'.repeat(MAX_HP-hp);
+  const heart = '♥'.repeat(hp) + '♡'.repeat(maxHealth()-hp);
   $('stage').textContent = `${index+1} / ${levels.length} · ${levels[index].name}`;
   $('hearts').textContent = heart;
-  $('hearts').setAttribute('aria-label', `체력 ${hp} / ${MAX_HP}`);
+  $('hearts').setAttribute('aria-label', `체력 ${hp} / ${maxHealth()}`);
   $('score').textContent = `${score.toLocaleString('ko-KR')} 점`;
   const active = [];
   if (raiseUntil > time) active.push(`💰 점수 2배 ${Math.ceil(raiseUntil-time)}초`);
@@ -327,7 +330,7 @@ function collect(item) {
   hint = itemStyles[item.type].name + ' 획득!';
   hintUntil = time+2;
   if (item.type === 'raise') raiseUntil = time+10;
-  if (item.type === 'spicy') { hp = Math.min(MAX_HP,hp+1); spicyUntil = time+7; }
+  if (item.type === 'spicy') { hp = Math.min(maxHealth(),hp+1); spicyUntil = time+7; }
   if (item.type === 'union') shield = 2;
   if (item.type === 'vacation') {
     hp--;
@@ -388,7 +391,7 @@ function step(dt) {
       finishRun('won',levels.length+' / '+levels.length+' · 모든 스테이지 클리어','드디어 퇴근! 🎉',result,'새 모험 시작 ▶');
     } else {
       show('clear',(index+1)+' / '+levels.length+' · 스테이지 클리어',level.name+' 클리어!',
-        result+'\n'+level.next+' 다음 스테이지에서 체력이 회복돼요.',
+        result+'\n'+level.next+(index===3 ? ' 다음 스테이지부터 최대 체력은 3칸이에요.' : ' 다음 스테이지에서 체력이 회복돼요.'),
         '다음 · '+levels[index+1].name+' ▶');
     }
   }
@@ -680,7 +683,7 @@ $('record').addEventListener('submit', async event => {
   }
 });
 refreshRanks();
-index=0; hp=MAX_HP; score=0; shield=0; state='intro';
+index=0; hp=maxHealth(); score=0; shield=0; state='intro';
 loadStage();
 new ResizeObserver(resize).observe(canvas);
 resize();
