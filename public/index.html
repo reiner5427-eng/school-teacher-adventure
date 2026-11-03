@@ -23,7 +23,7 @@
 <canvas id="game" width="960" height="430" aria-label="교사 캐릭터를 조작해 오른쪽 출구까지 이동하는 횡스크롤 게임"></canvas>
 <div class="overlay" id="overlay"><div class="card intro" id="card"><div class="eyebrow" id="kicker">🔔 딩동댕 · 아침 8시 30분</div><h1 id="title">학교선생님의 모험</h1><p id="message">첫 종이 울렸어요! 출석부를 챙겨 교실로 달려가요.
 열 가지 학교 일과를 마치고 무사히 퇴근할 수 있을까요?</p>
-<div class="intro-name" id="intro-name"><label for="player-name">선생님 닉네임</label><input id="player-name" maxlength="16" placeholder="예: 초코쌤" autocomplete="off" aria-describedby="name-note name-error" required><span class="intro-note" id="name-note">명예의 전당에 등록하면 닉네임과 점수가 공개돼요.</span><span class="intro-error" id="name-error" role="status"></span></div><button class="primary" id="action" type="button">모험 시작 ▶</button></div></div>
+<div class="intro-name" id="intro-name"><label for="player-name">선생님 닉네임</label><input id="player-name" maxlength="16" placeholder="예: 초코쌤" autocomplete="off" aria-describedby="name-note name-error" required><span class="intro-note" id="name-note">게임이 끝나면 닉네임과 점수가 명예의 전당에 자동 공개돼요.</span><span class="intro-error" id="name-error" role="status"></span></div><button class="primary" id="action" type="button">모험 시작 ▶</button></div></div>
 </div>
 <div class="status" id="status" role="status">별을 모으고 빠르게 도착하면 시간 보너스를 받아요.</div>
 <div class="controls"><div class="move"><button class="control" data-key="left" aria-label="왼쪽">◀</button><button class="control" data-key="right" aria-label="오른쪽">▶</button></div><div class="keys">이동 ← → / A D · 점프 Space / ↑ / W</div><button class="control jump" data-key="jump" aria-label="점프">⬆ 점프</button></div>
@@ -32,8 +32,7 @@
 <section class="board" aria-labelledby="board-title">
 <div class="board-head"><h2 id="board-title">🏆 명예의 전당</h2><button class="mini" id="refresh" type="button">새로고침</button></div>
 <form class="record" id="record" hidden>
-<label for="nickname">공개 닉네임</label><input id="nickname" name="nickname" maxlength="16" required placeholder="1~16자" autocomplete="off">
-<button class="mini" id="save" type="submit">기록 등록</button>
+<button class="mini" type="submit">기록 등록 다시 시도</button>
 </form>
 <p id="record-message" role="status"></p>
 <p id="board-message" role="status"></p>
@@ -100,7 +99,7 @@ const itemStyles = {
 };
 const online = location.protocol === 'https:' || location.hostname === 'localhost';
 const usedComplaints = new Set();
-let completedRun = null, readVersion = 0, playerName = '';
+let completedRun = null, savingRun = null, readVersion = 0, playerName = '';
 const intro = {kicker:$('kicker').textContent,title:$('title').textContent,message:$('message').textContent};
 function blockedNickname(name) {
   const normalized = name.normalize('NFKC').toLowerCase();
@@ -209,15 +208,13 @@ function timeBonus() {
   return Math.max(0, 300 - 20*Math.ceil(Math.max(0,time-grace)));
 }
 function finishRun(type, kicker, title, details, button) {
-  if (online) {
-    completedRun = {score, runId:crypto.randomUUID()};
-    $('nickname').value = playerName;
-    $('record').hidden = false;
-    $('record-message').textContent = '아래 명예의 전당에서 이번 기록을 등록할 수 있어요.';
-  }
   const total = '최종 점수 ' + score.toLocaleString('ko-KR') + '점 (시간 보너스 ' +
     timeBonusTotal.toLocaleString('ko-KR') + '점 포함)';
-  show(type,kicker,title,details+'\n'+total+(online?'\n아래에서 명예의 전당에 등록하세요.':''),button);
+  show(type,kicker,title,details+'\n'+total+(online?'\n명예의 전당에 기록을 자동 등록해요.':''),button);
+  if (online) {
+    completedRun = {score,name:playerName,runId:crypto.randomUUID()};
+    saveRecord();
+  }
 }
 function updateHUD() {
   const elapsed = Math.floor(time)+'초';
@@ -290,7 +287,10 @@ function throwState(foe) {
   if (!attack) return null;
   const clock = time*levels[index].speed + foe.base*.004;
   const cycle = Math.floor(clock/attack.period);
-  return {elapsed:clock%attack.period, directions:attack.pattern[cycle%attack.pattern.length]};
+  const pattern = attack.pattern[cycle%attack.pattern.length];
+  const count = index>=7 ? 3 : index>=5 ? 2 : pattern.length;
+  const directions = Array.from({length:count},(_,shot)=>pattern[shot%pattern.length]);
+  return {elapsed:clock%attack.period, directions};
 }
 function projectiles(foe) {
   const attack = enemy[foe.type].throw;
@@ -300,13 +300,15 @@ function projectiles(foe) {
   if (progress<0 || progress>=1) return [];
   const launchTime = time-progress*attack.flight/levels[index].speed;
   const launch = pose(foe,launchTime);
-  const distance = 25+progress*attack.range;
-  const y = launch.y-(attack.offset ?? 46) +
-    (attack.drop ?? 0)*progress-4*(attack.arc ?? 0)*progress*(1-progress);
-  return throwing.directions.map(direction => ({
-    x:launch.x+direction*distance,y,radius:attack.radius,
-    halfWidth:attack.halfWidth ?? attack.radius,name:attack.name
-  }));
+  const volley = index>=5;
+  return throwing.directions.map((direction,shot) => {
+    const spread = volley ? shot : 0;
+    const distance = 25+progress*attack.range*(1-spread*.16);
+    const y = launch.y-(attack.offset ?? 46)-spread*9 +
+      (attack.drop ?? 0)*progress-4*((attack.arc ?? 0)+spread*24)*progress*(1-progress);
+    return {x:launch.x+direction*distance,y,radius:attack.radius,
+      halfWidth:attack.halfWidth ?? attack.radius,name:attack.name};
+  });
 }
 function restartAfterComplaint() {
   usedComplaints.add(index);
@@ -564,9 +566,11 @@ function draw() {
     const throwing=throwState(foe);
     if(throwing && throwing.elapsed<THROW_WARNING){
       const handY=y-(enemy[foe.type].throw.offset ?? 46);
-      for (const direction of throwing.directions) {
+      for (const direction of new Set(throwing.directions)) {
         drawProjectile(foe.type,x+direction*25,handY);
-        label(direction<0?'←':'→',x+direction*33,handY-21,19,'#a2415a');
+        const count=throwing.directions.filter(value=>value===direction).length;
+        const arrow=direction<0?'←':'→';
+        label(count>1?arrow+' ×'+count:arrow,x+direction*35,handY-21,16,'#a2415a');
       }
     }
     if(foe.type==='paper'){
@@ -652,35 +656,32 @@ async function refreshRanks() {
   }
 }
 $('refresh').addEventListener('click', refreshRanks);
-$('record').addEventListener('submit', async event => {
-  event.preventDefault();
+async function saveRecord() {
   const run = completedRun;
-  if (!run || $('save').disabled) return;
-  const name = readNickname($('nickname'));
-  if (!name) {
-    $('record-message').textContent = '닉네임은 글자, 숫자, 공백, 밑줄, 하이픈으로 1~16자까지 쓸 수 있어요.';
-    return;
-  }
-  if (blockedNickname(name)) {
-    $('record-message').textContent = '비속어, 성적인 표현, 정치인 이름, 일베 용어는 사용할 수 없어요.';
-    return;
-  }
-  $('save').disabled = $('nickname').disabled = true;
-  $('record-message').textContent = '기록을 저장하는 중…';
+  if (!run || savingRun === run) return;
+  savingRun = run;
+  $('record').hidden = true;
+  $('record-message').textContent = '기록을 자동 등록하는 중…';
   try {
-    const {rows,rank} = await leaderboard({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...run,name})});
-    ++readVersion;
-    renderRanks(rows);
+    const {rows,rank} = await leaderboard({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(run)});
     if (completedRun === run) {
+      ++readVersion;
+      renderRanks(rows);
       completedRun = null;
-      $('record').hidden = true;
-      $('record-message').textContent = `${name}님의 기록을 등록했어요. 현재 ${rank}위!`;
-    }
+      $('record-message').textContent = run.name+'님의 기록을 등록했어요. 현재 '+rank+'위!';
+    } else refreshRanks();
   } catch {
-    if (completedRun === run) $('record-message').textContent = '기록을 저장하지 못했어요. 다시 시도해 주세요.';
+    if (completedRun === run) {
+      $('record').hidden = false;
+      $('record-message').textContent = '기록을 자동 등록하지 못했어요. 다시 시도할 수 있어요.';
+    }
   } finally {
-    $('save').disabled = $('nickname').disabled = false;
+    if (savingRun === run) savingRun = null;
   }
+}
+$('record').addEventListener('submit', event => {
+  event.preventDefault();
+  saveRecord();
 });
 refreshRanks();
 index=0; hp=maxHealth(); score=0; shield=0; state='intro';
