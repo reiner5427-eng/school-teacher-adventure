@@ -5,6 +5,16 @@ const respond = (data, status = 200, headers = {}) => Response.json(data, {
   status, headers: { 'Cache-Control': 'no-store', ...headers }
 });
 
+function blockedNickname(name) {
+  const normalized = name.normalize('NFKC').toLowerCase();
+  const compact = normalized.replace(/[^\p{L}\p{N}]/gu,'');
+  const korean = /씨발|시발|씨빨|시빨|씹|개새끼|개색기|병신|미친놈|미친년|좆|존나|지랄|꺼져|섹스|쎅스|야동|포르노|자위|보지|자지|딸딸이|성기|ㅅㅂ|ㅂㅅ/u;
+  const english = /fuck|fuk|fck|bitch|b1tch|whore|slut|cunt|dick|cock|pussy|porn|hentai|boobs|sexx|s3x/u;
+  return korean.test(compact) || korean.test(name) || english.test(compact) ||
+    /(?:^|[^\p{L}\p{N}])(?:sex|shit|asshole|xxx)(?:$|[^\p{L}\p{N}])/u.test(normalized) ||
+    /^(?:sex|shit|asshole|xxx)\d*$/u.test(compact);
+}
+
 export default async function leaderboard(request) {
   if (!['GET', 'POST'].includes(request.method)) {
     return respond({error:'method'}, 405, {Allow:'GET, POST'});
@@ -28,6 +38,7 @@ export default async function leaderboard(request) {
         typeof runId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(runId)) {
       return respond({error:'record'}, 400);
     }
+    if (blockedNickname(name)) return respond({error:'nickname'}, 422);
     record = {name, score, runId};
   }
   try {
