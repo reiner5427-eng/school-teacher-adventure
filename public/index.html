@@ -71,23 +71,23 @@ const levels = [
 });
 const enemy = {
   deputy:{label:'책임 떠넘기는 교감',hair:'#534969',shirt:'#678ca9',width:56,height:79,
-    throw:{name:"목적사업비 종이",period:3.4,range:148,flight:0.9,radius:11,halfWidth:26,arc:20,drop:18}},
+    throw:{pattern:[[-1],[1],[-1,1]],name:"목적사업비 종이",period:3.4,range:148,flight:0.9,radius:11,halfWidth:26,arc:20,drop:18}},
   workDeputy:{label:'일 좋아하는 교감',hair:'#6f516b',shirt:'#d99b77',width:56,height:79,
-    throw:{name:'목적사업비 파일',period:2.85,range:190,flight:.86,radius:11,halfWidth:27}},
+    throw:{pattern:[[-1],[1],[-1,1]],name:'목적사업비 파일',period:2.85,range:190,flight:.86,radius:11,halfWidth:27}},
   nurse:{label:'보건교사',hair:'#544362',shirt:'#71b9aa',width:47,height:72,
-    throw:{name:'서류철',period:2.15,range:203,flight:.78,radius:11}},
+    throw:{pattern:[[-1],[1]],name:'서류철',period:2.15,range:203,flight:.78,radius:11}},
   counselor:{label:'상담교사',hair:'#875466',shirt:'#d597c4',width:47,height:72,
-    throw:{name:'꿀단지',period:2.55,range:185,flight:1.02,radius:13,arc:61,drop:34}},
+    throw:{pattern:[[-1],[1]],name:'꿀단지',period:2.55,range:185,flight:1.02,radius:13,arc:61,drop:34}},
   runner:{label:'질주 학생',hair:'#5d4270',shirt:'#63a5c3',width:42,height:63,
-    throw:{name:"연필",period:4.1,range:110,flight:0.74,radius:6,halfWidth:16,offset:32,drop:12}},
+    throw:{pattern:[[-1],[1]],name:"연필",period:4.1,range:110,flight:0.74,radius:6,halfWidth:16,offset:32,drop:22}},
   chat:{label:'수다 학생',hair:'#8e4c68',shirt:'#eb88a5',width:44,height:65,
-    throw:{name:"지우개",period:4.5,range:112,flight:0.84,radius:8,halfWidth:12,offset:32,arc:25,drop:18}},
+    throw:{pattern:[[1],[-1]],name:"지우개",period:4.5,range:112,flight:0.84,radius:8,halfWidth:12,offset:32,arc:25,drop:18}},
   sleeper:{label:'꾸벅 학생',hair:'#4d537a',shirt:'#8f8cc8',width:45,height:54,
-    throw:{name:"공책",period:5,range:112,flight:0.86,radius:9,halfWidth:12,offset:29,drop:17}},
+    throw:{pattern:[[-1],[1]],name:"공책",period:5,range:112,flight:0.86,radius:9,halfWidth:12,offset:29,arc:38,drop:16}},
   hopper:{label:'폴짝 학생',hair:'#a46a44',shirt:'#eab951',width:44,height:60,
-    throw:{name:"자",period:4.6,range:108,flight:0.81,radius:6,halfWidth:17,offset:28,drop:36}},
+    throw:{pattern:[[1],[-1]],name:"자",period:4.6,range:108,flight:0.81,radius:6,halfWidth:17,offset:28,drop:48}},
   parent:{label:'진상 학부모',hair:'#79435d',shirt:'#e37e98',width:55,height:78,
-    throw:{name:"민원 종이",period:3.8,range:155,flight:0.92,radius:11,halfWidth:16,arc:30,drop:18}},
+    throw:{pattern:[[-1],[1],[-1,1]],name:"민원 종이",period:3.8,range:155,flight:0.92,radius:11,halfWidth:16,arc:30,drop:18}},
   principal:{label:'엉뚱한 교장',hair:'#6d6790',shirt:'#9281c6',width:53,height:81},
   paper:{label:'업무 폭탄',width:59,height:62}
 };
@@ -281,21 +281,29 @@ function pose(foe, at = time) {
   }
   return {x,y,width,height};
 }
-function throwCycle(foe) {
-  const attack = enemy[foe.type].throw;
-  return (time*levels[index].speed + foe.base*.004) % attack.period;
-}
-function projectile(foe) {
+const THROW_WARNING = .42;
+function throwState(foe) {
   const attack = enemy[foe.type].throw;
   if (!attack) return null;
-  const progress = (throwCycle(foe)-.42)/attack.flight;
-  if (progress<0 || progress>=1) return null;
+  const clock = time*levels[index].speed + foe.base*.004;
+  const cycle = Math.floor(clock/attack.period);
+  return {elapsed:clock%attack.period, directions:attack.pattern[cycle%attack.pattern.length]};
+}
+function projectiles(foe) {
+  const attack = enemy[foe.type].throw;
+  const throwing = throwState(foe);
+  if (!throwing) return [];
+  const progress = (throwing.elapsed-THROW_WARNING)/attack.flight;
+  if (progress<0 || progress>=1) return [];
   const launchTime = time-progress*attack.flight/levels[index].speed;
   const launch = pose(foe,launchTime);
-  const x = launch.x-25-progress*attack.range;
+  const distance = 25+progress*attack.range;
   const y = launch.y-(attack.offset ?? 46) +
     (attack.drop ?? 0)*progress-4*(attack.arc ?? 0)*progress*(1-progress);
-  return {x,y,radius:attack.radius,halfWidth:attack.halfWidth ?? attack.radius,name:attack.name};
+  return throwing.directions.map(direction => ({
+    x:launch.x+direction*distance,y,radius:attack.radius,
+    halfWidth:attack.halfWidth ?? attack.radius,name:attack.name
+  }));
 }
 function restartAfterComplaint() {
   usedComplaints.add(index);
@@ -356,16 +364,15 @@ function step(dt) {
   if (time >= player.immune) {
     for (const foe of foes) {
       const {x,y,width,height} = pose(foe);
-      const shot = projectile(foe);
-      const hitByShot = shot && Math.abs(shot.x-player.x)<shot.halfWidth+11 &&
-        player.y>shot.y-shot.radius && player.y-56<shot.y+shot.radius;
+      const shot = projectiles(foe).find(shot => Math.abs(shot.x-player.x)<shot.halfWidth+11 &&
+        player.y>shot.y-shot.radius && player.y-56<shot.y+shot.radius);
       const hitBody = Math.abs(x-player.x)<width/2+11 && player.y>y-height+7 && player.y-56<y-5;
-      if (!hitByShot && !hitBody) continue;
+      if (!shot && !hitBody) continue;
       player.immune = time+1.25;
       if (shield) {shield--; hint = '노조 방패가 막아 줬어요!';}
       else {
         hp--;
-        hint = hitByShot ? shot.name+'에 맞았어요!' : enemy[foe.type].label+'에 부딪혔어요!';
+        hint = shot ? shot.name+'에 맞았어요!' : enemy[foe.type].label+'에 부딪혔어요!';
       }
       hintUntil = time+1.4;
       finishIfOutOfHealth();
@@ -546,13 +553,18 @@ function draw() {
   }
   for(const foe of foes){
     const shape=pose(foe),x=shape.x-camera,y=shape.y;
-    const shot=projectile(foe);
-    if(shot && shot.x-camera>-shot.halfWidth && shot.x-camera<viewWidth+shot.halfWidth)drawProjectile(foe.type,shot.x-camera,shot.y);
+    for (const shot of projectiles(foe)) {
+      const shotX=shot.x-camera;
+      if(shotX>-shot.halfWidth && shotX<viewWidth+shot.halfWidth)drawProjectile(foe.type,shotX,shot.y);
+    }
     if(x<-80||x>viewWidth+80)continue;
-    if(enemy[foe.type].throw && throwCycle(foe)<.42){
+    const throwing=throwState(foe);
+    if(throwing && throwing.elapsed<THROW_WARNING){
       const handY=y-(enemy[foe.type].throw.offset ?? 46);
-      drawProjectile(foe.type,x-25,handY);
-      label('!',x-27,handY-21,17,'#a2415a');
+      for (const direction of throwing.directions) {
+        drawProjectile(foe.type,x+direction*25,handY);
+        label(direction<0?'←':'→',x+direction*33,handY-21,19,'#a2415a');
+      }
     }
     if(foe.type==='paper'){
       oval(x,FLOOR+2,31,5,'#5c3c6826');
