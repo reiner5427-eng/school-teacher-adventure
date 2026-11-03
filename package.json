@@ -1,0 +1,7 @@
+{
+  "name": "school-teacher-adventure",
+  "private": true,
+  "dependencies": {
+    "@netlify/database": "*"
+  }
+}
