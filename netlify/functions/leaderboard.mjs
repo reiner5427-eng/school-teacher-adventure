@@ -1,6 +1,7 @@
 import { getDatabase } from '@netlify/database';
 
 export const config = { path: '/api/leaderboard' };
+const LEADERBOARD_COURSE = 3;
 const respond = (data, status = 200, headers = {}) => Response.json(data, {
   status, headers: { 'Cache-Control': 'no-store', ...headers }
 });
@@ -50,18 +51,18 @@ export default async function leaderboard(request) {
     let rank;
     if (record) {
       await sql`INSERT INTO leaderboard (run_id, name, score, course)
-        VALUES (${record.runId}, ${record.name}, ${record.score}, 2)
+        VALUES (${record.runId}, ${record.name}, ${record.score}, ${LEADERBOARD_COURSE})
         ON CONFLICT (run_id) DO NOTHING`;
       const [saved] = await sql`SELECT name, score, (
         SELECT count(*)::integer + 1 FROM leaderboard AS rival
-        WHERE rival.course = 2 AND (rival.score > own.score OR (rival.score = own.score AND
+        WHERE rival.course = ${LEADERBOARD_COURSE} AND (rival.score > own.score OR (rival.score = own.score AND
           (rival.created_at, rival.run_id) < (own.created_at, own.run_id)))
-      ) AS rank FROM leaderboard AS own WHERE course = 2 AND run_id = ${record.runId}`;
+      ) AS rank FROM leaderboard AS own WHERE course = ${LEADERBOARD_COURSE} AND run_id = ${record.runId}`;
       if (!saved || saved.name !== record.name || saved.score !== record.score) return respond({error:'conflict'}, 409);
       rank = saved.rank;
     }
     const rows = await sql`SELECT name, score FROM leaderboard
-      WHERE course = 2 ORDER BY score DESC, created_at, run_id LIMIT 20`;
+      WHERE course = ${LEADERBOARD_COURSE} ORDER BY score DESC, created_at, run_id LIMIT 20`;
     return respond({rows, rank}, record ? 201 : 200);
   } catch (error) {
     console.error('Leaderboard storage error', error.code ?? error.name);
