@@ -111,6 +111,11 @@ const online = location.protocol === 'https:' || location.hostname === 'localhos
 const usedComplaints = new Set();
 let completedRun = null, savingRun = null, readVersion = 0, playerName = '';
 const intro = {kicker:$('kicker').textContent,title:$('title').textContent,message:$('message').textContent};
+function hasReservedNickname(name) {
+  const compact = name.normalize('NFKC').toLowerCase().replace(/[\s\p{Cf}\p{M}_-]/gu, '').normalize('NFKC');
+  return /세무냥이|리트냥이|편입냥이|충주냥이|7급냥이|한전냥이|작수냥이|엠딧냥이|관세냥이|감평냥이/u.test(compact);
+}
+
 function blockedNickname(name) {
   const normalized = name.normalize('NFKC').toLowerCase();
   const compact = normalized.replace(/[^\p{L}\p{N}]/gu,'');
@@ -154,8 +159,9 @@ function start() {
   if (state === 'intro') {
     const input = $('player-name');
     const name = readNickname(input);
-    if (!name || blockedNickname(name)) {
-      $('name-error').textContent = name
+    const reserved = hasReservedNickname(input.value);
+    if (!name || reserved || blockedNickname(name)) {
+      $('name-error').textContent = reserved ? '사용할 수 없는 닉네임입니다.' : name
         ? '비속어, 성적인 표현, 정치인 이름, 일베 용어는 사용할 수 없어요.'
         : '닉네임을 글자와 숫자 등으로 1~16자까지 입력해 주세요.';
       input.setAttribute('aria-invalid','true');
