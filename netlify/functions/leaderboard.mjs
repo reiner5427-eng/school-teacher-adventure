@@ -2,6 +2,8 @@ import { getDatabase } from '@netlify/database';
 
 export const config = { path: '/api/leaderboard' };
 const LEADERBOARD_COURSE = 3;
+const REMOVED_NICKNAME_PATTERN = '돼|당뇨|역류|불|주먹|스마트|안경|도둑|빡';
+const removedNickname = new RegExp(REMOVED_NICKNAME_PATTERN, 'u');
 const respond = (data, status = 200, headers = {}) => Response.json(data, {
   status, headers: { 'Cache-Control': 'no-store', ...headers }
 });
@@ -43,7 +45,8 @@ export default async function leaderboard(request) {
         typeof runId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(runId)) {
       return respond({error:'record'}, 400);
     }
-    if (/세무냥이|리트냥이|편입냥이|충주냥이|7급냥이|한전냥이|작수냥이|엠딧냥이|관세냥이|감평냥이|노안|예일리언|에일리언|야르|왜|잼민|응우엔|응우옌|응우|장애|게이|사랑해|죽|니거|니그로|돼지|섹시|울트라|씹|몸무게/u.test(name.normalize('NFKC').toLowerCase().replace(/[\s\p{Cf}\p{M}_-]/gu, '').normalize('NFKC')) || blockedNickname(name)) return respond({error:'nickname'}, 422);
+    const compact = name.normalize('NFKC').toLowerCase().replace(/[\s\p{Cf}\p{M}_-]/gu, '').normalize('NFKC');
+    if (/세무냥이|리트냥이|편입냥이|충주냥이|7급냥이|한전냥이|작수냥이|엠딧냥이|관세냥이|감평냥이|노안|예일리언|에일리언|야르|왜|잼민|응우엔|응우옌|응우|장애|게이|사랑해|죽|니거|니그로|돼지|섹시|울트라|씹|몸무게/u.test(compact) || removedNickname.test(compact) || blockedNickname(name)) return respond({error:'nickname'}, 422);
     record = {name, score, runId};
   }
   try {
@@ -55,14 +58,18 @@ export default async function leaderboard(request) {
         ON CONFLICT (run_id) DO NOTHING`;
       const [saved] = await sql`SELECT name, score, (
         SELECT count(*)::integer + 1 FROM leaderboard AS rival
-        WHERE rival.course = ${LEADERBOARD_COURSE} AND (rival.score > own.score OR (rival.score = own.score AND
+        WHERE rival.course = ${LEADERBOARD_COURSE}
+          AND normalize(translate(normalize(rival.name, NFKC), ' _-', ''), NFKC) !~ ${REMOVED_NICKNAME_PATTERN}
+          AND (rival.score > own.score OR (rival.score = own.score AND
           (rival.created_at, rival.run_id) < (own.created_at, own.run_id)))
       ) AS rank FROM leaderboard AS own WHERE course = ${LEADERBOARD_COURSE} AND run_id = ${record.runId}`;
       if (!saved || saved.name !== record.name || saved.score !== record.score) return respond({error:'conflict'}, 409);
       rank = saved.rank;
     }
     const rows = await sql`SELECT name, score FROM leaderboard
-      WHERE course = ${LEADERBOARD_COURSE} ORDER BY score DESC, created_at, run_id LIMIT 20`;
+      WHERE course = ${LEADERBOARD_COURSE}
+        AND normalize(translate(normalize(name, NFKC), ' _-', ''), NFKC) !~ ${REMOVED_NICKNAME_PATTERN}
+      ORDER BY score DESC, created_at, run_id LIMIT 20`;
     return respond({rows, rank}, record ? 201 : 200);
   } catch (error) {
     console.error('Leaderboard storage error', error.code ?? error.name);
