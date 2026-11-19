@@ -3,12 +3,18 @@ import { getDatabase } from '@netlify/database';
 export const config = { path: '/api/leaderboard' };
 const LEADERBOARD_COURSE = 3;
 const REMOVED_NICKNAME_PATTERN = '돼|당뇨|역류|불|주먹|스마트|안경|도둑|빡';
+const LATIN_NICKNAME_PATTERN = "[A-Za-zªºÀ-ÖØ-öø-ʸˠ-ˤᴀ-ᴥᴬ-ᵜᵢ-ᵥᵫ-ᵷᵹ-ᶾḀ-ỿⁱⁿₐ-ₜK-ÅℲⅎↃ-ↄⱠ-ⱿꜢ-ꞇꞋ-Ƛ꟱-ꟿꬰ-ꭚꭜ-ꭤꭦ-ꭩﬀ-ﬆＡ-Ｚａ-ｚ𐞀-𐞅𐞇-𐞰𐞲-𐞺𝼀-𝼞𝼥-𝼪]";
 const removedNickname = new RegExp(REMOVED_NICKNAME_PATTERN, 'u');
 const respond = (data, status = 200, headers = {}) => Response.json(data, {
   status, headers: { 'Cache-Control': 'no-store', ...headers }
 });
 
+function hasLatinNickname(name) {
+  return typeof name === 'string' && /(?=\p{L})\p{Script=Latin}/u.test(name.normalize('NFKC'));
+}
+
 function blockedNickname(name) {
+  if (hasLatinNickname(name)) return true;
   const normalized = name.normalize('NFKC').toLowerCase();
   const compact = normalized.replace(/[^\p{L}\p{N}]/gu,'');
   const politicians = /이재명|윤석열|문재인|박근혜|이명박|노무현|김대중|김영삼|노태우|전두환|최규하|박정희|윤보선|이승만|한동훈|이준석|안철수|홍준표|나경원|유승민|오세훈|김문수|정청래|우원식|장동혁|한덕수|이낙연|황교안|심상정|추미애|원희룡|김부겸|박지원|김민석|권성동|주호영|김기현|김동연|박용진|이탄희|박주민|정점식|김도읍|배현진|장혜영|용혜인|허경영/u;
@@ -60,6 +66,7 @@ export default async function leaderboard(request) {
         SELECT count(*)::integer + 1 FROM leaderboard AS rival
         WHERE rival.course = ${LEADERBOARD_COURSE}
           AND normalize(translate(normalize(rival.name, NFKC), ' _-', ''), NFKC) !~ ${REMOVED_NICKNAME_PATTERN}
+          AND normalize(rival.name, NFKC) !~ ${LATIN_NICKNAME_PATTERN}
           AND (rival.score > own.score OR (rival.score = own.score AND
           (rival.created_at, rival.run_id) < (own.created_at, own.run_id)))
       ) AS rank FROM leaderboard AS own WHERE course = ${LEADERBOARD_COURSE} AND run_id = ${record.runId}`;
@@ -69,6 +76,7 @@ export default async function leaderboard(request) {
     const rows = await sql`SELECT name, score FROM leaderboard
       WHERE course = ${LEADERBOARD_COURSE}
         AND normalize(translate(normalize(name, NFKC), ' _-', ''), NFKC) !~ ${REMOVED_NICKNAME_PATTERN}
+        AND normalize(name, NFKC) !~ ${LATIN_NICKNAME_PATTERN}
       ORDER BY score DESC, created_at, run_id LIMIT 20`;
     return respond({rows, rank}, record ? 201 : 200);
   } catch (error) {
