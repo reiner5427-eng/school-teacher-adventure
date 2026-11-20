@@ -2,7 +2,7 @@ import { getDatabase } from '@netlify/database';
 
 export const config = { path: '/api/leaderboard' };
 const LEADERBOARD_COURSE = 3;
-const REMOVED_NICKNAME_PATTERN = '돼|당뇨|역류|불|주먹|스마트|안경|도둑|빡';
+const REMOVED_NICKNAME_PATTERN = '돼|당뇨|역류|불|주먹|스마트|안경|도둑|빡|김대중|엄|줴';
 const LATIN_NICKNAME_PATTERN = "[A-Za-zªºÀ-ÖØ-öø-ʸˠ-ˤᴀ-ᴥᴬ-ᵜᵢ-ᵥᵫ-ᵷᵹ-ᶾḀ-ỿⁱⁿₐ-ₜK-ÅℲⅎↃ-ↄⱠ-ⱿꜢ-ꞇꞋ-Ƛ꟱-ꟿꬰ-ꭚꭜ-ꭤꭦ-ꭩﬀ-ﬆＡ-Ｚａ-ｚ𐞀-𐞅𐞇-𐞰𐞲-𐞺𝼀-𝼞𝼥-𝼪]";
 const removedNickname = new RegExp(REMOVED_NICKNAME_PATTERN, 'u');
 const respond = (data, status = 200, headers = {}) => Response.json(data, {
